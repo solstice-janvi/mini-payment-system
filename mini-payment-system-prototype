@@ -1,0 +1,217 @@
+import React, { useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { CreditCard, ShieldCheck, Send, Wallet, LockKeyhole, ReceiptText, UserRound, ArrowRight, CheckCircle2, Clock3, IndianRupee, Smartphone, History, Eye, EyeOff } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
+const demoContacts = [
+  { name: "Aarav Sharma", upi: "aarav@bank", avatar: "AS" },
+  { name: "Riya Mehta", upi: "riya@pay", avatar: "RM" },
+  { name: "Sneha Jain", upi: "sneha@upi", avatar: "SJ" },
+];
+
+const initialTxns = [
+  { id: "TXN894231", to: "Riya Mehta", upi: "riya@pay", amount: 850, status: "Success", time: "Today, 10:20 AM", type: "Sent" },
+  { id: "TXN894114", to: "Aarav Sharma", upi: "aarav@bank", amount: 1200, status: "Success", time: "Yesterday, 7:42 PM", type: "Sent" },
+  { id: "TXN893908", to: "Wallet Top-up", upi: "HDFC Bank", amount: 5000, status: "Success", time: "May 22, 1:15 PM", type: "Added" },
+];
+
+function formatMoney(value) {
+  return new Intl.NumberFormat("en-IN").format(value || 0);
+}
+
+function generateTxnId() {
+  return `TXN${Math.floor(100000 + Math.random() * 899999)}`;
+}
+
+export default function MiniPaymentSystemPrototype() {
+  const [screen, setScreen] = useState("login");
+  const [showPin, setShowPin] = useState(false);
+  const [balance, setBalance] = useState(24750);
+  const [txns, setTxns] = useState(initialTxns);
+  const [form, setForm] = useState({ mobile: "9876543210", pin: "1234", receiver: "", upi: "", amount: "", note: "" });
+  const [selected, setSelected] = useState(null);
+  const [otp, setOtp] = useState("");
+  const [generatedOtp, setGeneratedOtp] = useState("482913");
+  const [lastTxn, setLastTxn] = useState(null);
+  const [error, setError] = useState("");
+
+  const amountNumber = useMemo(() => Number(form.amount || 0), [form.amount]);
+  const fee = amountNumber > 0 ? Math.ceil(amountNumber * 0.002) : 0;
+  const total = amountNumber + fee;
+
+  const login = () => {
+    setError("");
+    if (form.mobile.length !== 10 || form.pin.length < 4) {
+      setError("Enter valid mobile number and 4-digit PIN.");
+      return;
+    }
+    setScreen("home");
+  };
+
+  const chooseContact = (contact) => {
+    setSelected(contact);
+    setForm((prev) => ({ ...prev, receiver: contact.name, upi: contact.upi }));
+  };
+
+  const startPayment = () => {
+    setError("");
+    if (!form.receiver || !form.upi || amountNumber <= 0) {
+      setError("Please select receiver and enter amount.");
+      return;
+    }
+    if (total > balance) {
+      setError("Insufficient wallet balance.");
+      return;
+    }
+    const newOtp = String(Math.floor(100000 + Math.random() * 899999));
+    setGeneratedOtp(newOtp);
+    setOtp("");
+    setScreen("verify");
+  };
+
+  const confirmPayment = () => {
+    setError("");
+    if (otp !== generatedOtp) {
+      setError(`Demo OTP is ${generatedOtp}. Enter it to continue.`);
+      return;
+    }
+    const txn = {
+      id: generateTxnId(),
+      to: form.receiver,
+      upi: form.upi,
+      amount: amountNumber,
+      status: "Success",
+      time: "Just now",
+      type: "Sent",
+      note: form.note || "Payment transfer",
+    };
+    setBalance((b) => b - total);
+    setTxns((prev) => [txn, ...prev]);
+    setLastTxn(txn);
+    setScreen("success");
+  };
+
+  const resetPayment = () => {
+    setSelected(null);
+    setForm((prev) => ({ ...prev, receiver: "", upi: "", amount: "", note: "" }));
+    setError("");
+    setScreen("home");
+  };
+
+  const Shell = ({ children }) => (
+    <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
+      <div className="w-full max-w-6xl grid lg:grid-cols-[0.9fr_1.4fr] gap-5">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="rounded-[2rem] bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 p-1 shadow-2xl">
+          <div className="h-full rounded-[1.8rem] bg-slate-950/70 backdrop-blur p-6 flex flex-col justify-between overflow-hidden relative">
+            <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+            <div>
+              <div className="flex items-center gap-3 mb-8">
+                <div className="h-12 w-12 rounded-2xl bg-white text-slate-950 flex items-center justify-center font-black text-xl">P</div>
+                <div>
+                  <h1 className="text-2xl font-bold">PayNova</h1>
+                  <p className="text-sm text-white/70">Mini Payment System Prototype</p>
+                </div>
+              </div>
+              <h2 className="text-4xl font-black leading-tight mb-4">Secure digital payments in seconds.</h2>
+              <p className="text-white/75 leading-relaxed">A proof-of-concept fintech workflow covering authentication, wallet balance, receiver validation, OTP verification, transaction fee calculation, receipt generation, and transaction history.</p>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mt-8">
+              <div className="rounded-2xl bg-white/10 p-4"><ShieldCheck className="mb-2" /><p className="text-xs text-white/70">OTP Security</p></div>
+              <div className="rounded-2xl bg-white/10 p-4"><Wallet className="mb-2" /><p className="text-xs text-white/70">Wallet Flow</p></div>
+              <div className="rounded-2xl bg-white/10 p-4"><ReceiptText className="mb-2" /><p className="text-xs text-white/70">Receipts</p></div>
+            </div>
+          </div>
+        </motion.div>
+        <div>{children}</div>
+      </div>
+    </div>
+  );
+
+  return (
+    <Shell>
+      <AnimatePresence mode="wait">
+        {screen === "login" && (
+          <motion.div key="login" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+            <Card className="rounded-[2rem] border-white/10 bg-white text-slate-950 shadow-2xl">
+              <CardContent className="p-8">
+                <div className="mb-8">
+                  <p className="text-sm font-semibold text-indigo-600 mb-2">User Authentication</p>
+                  <h2 className="text-3xl font-black">Login to Wallet</h2>
+                  <p className="text-slate-500 mt-2">Demo credentials are pre-filled. Click login to enter the prototype.</p>
+                </div>
+                <div className="space-y-4">
+                  <label className="block"><span className="text-sm font-semibold">Mobile Number</span><div className="mt-2 flex items-center gap-3 rounded-2xl border p-4"><Smartphone size={20} /><input className="w-full outline-none" value={form.mobile} maxLength={10} onChange={(e) => setForm({ ...form, mobile: e.target.value.replace(/\D/g, "") })} /></div></label>
+                  <label className="block"><span className="text-sm font-semibold">Wallet PIN</span><div className="mt-2 flex items-center gap-3 rounded-2xl border p-4"><LockKeyhole size={20} /><input className="w-full outline-none" type={showPin ? "text" : "password"} value={form.pin} maxLength={4} onChange={(e) => setForm({ ...form, pin: e.target.value.replace(/\D/g, "") })} /><button onClick={() => setShowPin(!showPin)}>{showPin ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></label>
+                  {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>}
+                  <Button onClick={login} className="w-full rounded-2xl py-6 text-base bg-slate-950 hover:bg-slate-800">Login Securely <ArrowRight className="ml-2" size={18} /></Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {screen === "home" && (
+          <motion.div key="home" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-5">
+            <div className="grid md:grid-cols-2 gap-5">
+              <Card className="rounded-[2rem] bg-white text-slate-950 shadow-xl"><CardContent className="p-6"><div className="flex justify-between items-start"><div><p className="text-slate-500 text-sm">Available Balance</p><h2 className="text-4xl font-black mt-2 flex items-center"><IndianRupee />{formatMoney(balance)}</h2></div><div className="h-12 w-12 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center"><Wallet /></div></div></CardContent></Card>
+              <Card className="rounded-[2rem] bg-white text-slate-950 shadow-xl"><CardContent className="p-6"><p className="text-slate-500 text-sm">Security Layer</p><div className="flex items-center gap-3 mt-4"><ShieldCheck className="text-green-600" /><div><h3 className="font-bold">PIN + OTP Enabled</h3><p className="text-sm text-slate-500">Demo risk checks active</p></div></div></CardContent></Card>
+            </div>
+
+            <Card className="rounded-[2rem] bg-white text-slate-950 shadow-xl"><CardContent className="p-6">
+              <div className="flex items-center justify-between mb-5"><div><p className="text-sm font-semibold text-indigo-600">Send Money</p><h2 className="text-2xl font-black">Create Transaction</h2></div><Send className="text-indigo-600" /></div>
+              <div className="grid md:grid-cols-3 gap-3 mb-5">
+                {demoContacts.map((c) => <button key={c.upi} onClick={() => chooseContact(c)} className={`rounded-2xl border p-4 text-left transition ${selected?.upi === c.upi ? "border-indigo-600 bg-indigo-50" : "hover:bg-slate-50"}`}><div className="h-10 w-10 rounded-xl bg-slate-950 text-white flex items-center justify-center font-bold mb-3">{c.avatar}</div><h3 className="font-bold">{c.name}</h3><p className="text-xs text-slate-500">{c.upi}</p></button>)}
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <label className="block"><span className="text-sm font-semibold">Receiver Name</span><input className="mt-2 w-full rounded-2xl border p-4 outline-none" value={form.receiver} onChange={(e) => setForm({ ...form, receiver: e.target.value })} placeholder="Receiver name" /></label>
+                <label className="block"><span className="text-sm font-semibold">UPI / Wallet ID</span><input className="mt-2 w-full rounded-2xl border p-4 outline-none" value={form.upi} onChange={(e) => setForm({ ...form, upi: e.target.value })} placeholder="example@bank" /></label>
+                <label className="block"><span className="text-sm font-semibold">Amount</span><input className="mt-2 w-full rounded-2xl border p-4 outline-none" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value.replace(/\D/g, "") })} placeholder="₹0" /></label>
+                <label className="block"><span className="text-sm font-semibold">Note</span><input className="mt-2 w-full rounded-2xl border p-4 outline-none" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Dinner, rent, shopping..." /></label>
+              </div>
+              {amountNumber > 0 && <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm"><div className="flex justify-between"><span>Amount</span><b>₹{formatMoney(amountNumber)}</b></div><div className="flex justify-between mt-2"><span>Platform fee</span><b>₹{formatMoney(fee)}</b></div><div className="flex justify-between mt-2 text-base"><span>Total debit</span><b>₹{formatMoney(total)}</b></div></div>}
+              {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>}
+              <Button onClick={startPayment} className="mt-5 w-full rounded-2xl py-6 text-base bg-indigo-600 hover:bg-indigo-700">Proceed to Secure Verification</Button>
+            </CardContent></Card>
+
+            <Card className="rounded-[2rem] bg-white text-slate-950 shadow-xl"><CardContent className="p-6"><div className="flex items-center gap-2 mb-4"><History size={20} /><h2 className="text-xl font-black">Recent Transactions</h2></div><div className="space-y-3">{txns.slice(0, 4).map((t) => <div key={t.id} className="flex items-center justify-between rounded-2xl border p-4"><div><h3 className="font-bold">{t.to}</h3><p className="text-xs text-slate-500">{t.id} • {t.time}</p></div><div className="text-right"><p className={`font-black ${t.type === "Added" ? "text-green-600" : "text-slate-950"}`}>{t.type === "Added" ? "+" : "-"}₹{formatMoney(t.amount)}</p><p className="text-xs text-green-600">{t.status}</p></div></div>)}</div></CardContent></Card>
+          </motion.div>
+        )}
+
+        {screen === "verify" && (
+          <motion.div key="verify" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+            <Card className="rounded-[2rem] bg-white text-slate-950 shadow-2xl"><CardContent className="p-8">
+              <div className="h-16 w-16 rounded-3xl bg-indigo-100 text-indigo-700 flex items-center justify-center mb-5"><ShieldCheck size={32} /></div>
+              <p className="text-sm font-semibold text-indigo-600 mb-2">Transaction Verification</p>
+              <h2 className="text-3xl font-black mb-2">Confirm Payment</h2>
+              <p className="text-slate-500 mb-6">Enter the demo OTP to authorize this transaction securely.</p>
+              <div className="rounded-3xl bg-slate-50 p-5 mb-5"><div className="flex justify-between mb-2"><span>Paying to</span><b>{form.receiver}</b></div><div className="flex justify-between mb-2"><span>UPI ID</span><b>{form.upi}</b></div><div className="flex justify-between mb-2"><span>Total Debit</span><b>₹{formatMoney(total)}</b></div><div className="flex justify-between"><span>Demo OTP</span><b className="text-indigo-600">{generatedOtp}</b></div></div>
+              <input className="w-full rounded-2xl border p-5 text-center text-2xl tracking-[0.5em] outline-none" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))} placeholder="000000" />
+              {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</p>}
+              <div className="grid grid-cols-2 gap-3 mt-5"><Button variant="outline" onClick={() => setScreen("home")} className="rounded-2xl py-6">Cancel</Button><Button onClick={confirmPayment} className="rounded-2xl py-6 bg-indigo-600 hover:bg-indigo-700">Confirm & Pay</Button></div>
+            </CardContent></Card>
+          </motion.div>
+        )}
+
+        {screen === "success" && lastTxn && (
+          <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, y: -20 }}>
+            <Card className="rounded-[2rem] bg-white text-slate-950 shadow-2xl"><CardContent className="p-8 text-center">
+              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="mx-auto h-20 w-20 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-5"><CheckCircle2 size={42} /></motion.div>
+              <p className="text-sm font-semibold text-green-600 mb-2">Payment Successful</p>
+              <h2 className="text-4xl font-black mb-2">₹{formatMoney(lastTxn.amount)}</h2>
+              <p className="text-slate-500 mb-6">sent to {lastTxn.to}</p>
+              <div className="rounded-3xl bg-slate-50 p-5 text-left space-y-3 mb-6">
+                <div className="flex justify-between"><span>Transaction ID</span><b>{lastTxn.id}</b></div>
+                <div className="flex justify-between"><span>Receiver</span><b>{lastTxn.upi}</b></div>
+                <div className="flex justify-between"><span>Status</span><b className="text-green-600">Success</b></div>
+                <div className="flex justify-between"><span>Time</span><b>Just now</b></div>
+                <div className="flex justify-between"><span>Security</span><b>OTP Verified</b></div>
+              </div>
+              <Button onClick={resetPayment} className="w-full rounded-2xl py-6 bg-slate-950 hover:bg-slate-800">Back to Dashboard</Button>
+            </CardContent></Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </Shell>
+  );
+}
